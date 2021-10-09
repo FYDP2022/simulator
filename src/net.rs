@@ -1,7 +1,7 @@
 use std::sync::{Mutex, MutexGuard};
 
-use futures::{Stream, StreamExt};
-use futures::channel::mpsc::{UnboundedSender, UnboundedReceiver};
+use futures::channel::mpsc::{UnboundedReceiver, UnboundedSender};
+use futures::StreamExt;
 
 use async_tungstenite::async_std::connect_async;
 use tungstenite::Error;
@@ -9,7 +9,7 @@ use tungstenite::Error;
 pub struct Message;
 
 pub struct Client {
-  send_queue: UnboundedSender<Message>,
+  _send_queue: UnboundedSender<Message>,
   receive_queue: Mutex<UnboundedReceiver<Message>>,
 }
 
@@ -21,11 +21,7 @@ impl Client {
     let (write, read) = ws_stream.split();
 
     async_std::task::spawn(async move {
-      read
-        .map(|_msg| Ok(Message {}))
-        .forward(receive_tx)
-        .await
-        .unwrap();
+      read.map(|_msg| Ok(Message {})).forward(receive_tx).await.unwrap();
     });
 
     async_std::task::spawn(async move {
@@ -37,13 +33,13 @@ impl Client {
     });
 
     Ok(Self {
-      send_queue: send_tx,
+      _send_queue: send_tx,
       receive_queue: Mutex::new(receive_rx),
     })
   }
 
   pub fn _send(&self, message: Message) {
-    self.send_queue.unbounded_send(message).unwrap();
+    self._send_queue.unbounded_send(message).unwrap();
   }
 
   pub fn stream(&self) -> MutexGuard<UnboundedReceiver<Message>> {

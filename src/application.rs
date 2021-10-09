@@ -1,15 +1,15 @@
 use super::featuredb::FeatureDB;
 use super::net::Client;
 
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 use winit::event::*;
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
 
 pub struct Application {
-  instance: wgpu::Instance,
-  adapter: wgpu::Adapter,
+  _instance: wgpu::Instance,
+  _adapter: wgpu::Adapter,
   surface: wgpu::Surface,
   device: wgpu::Device,
   queue: wgpu::Queue,
@@ -17,7 +17,7 @@ pub struct Application {
   size: winit::dpi::PhysicalSize<u32>,
   event_loop: Mutex<Option<EventLoop<()>>>,
   window: Window,
-  featuredb: FeatureDB,
+  _featuredb: FeatureDB,
   websocket: Option<Client>,
 }
 
@@ -33,25 +33,15 @@ impl Application {
 
     let size = window.inner_size();
 
-    // The instance is a handle to our GPU
-    // BackendBit::PRIMARY => Vulkan + Metal + DX12 + Browser WebGPU
     let instance = wgpu::Instance::new(wgpu::Backends::all());
     let surface = unsafe { instance.create_surface(&window) };
-    let _adapter = instance
+
+    let adapter = instance
       .request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::default(),
         compatible_surface: Some(&surface),
       })
       .await
-      .unwrap();
-
-    let adapter = instance
-      .enumerate_adapters(wgpu::Backends::all())
-      .filter(|adapter| {
-        // Check if this adapter supports our surface
-        surface.get_preferred_format(&adapter).is_some()
-      })
-      .next()
       .unwrap();
 
     let (device, queue) = adapter
@@ -76,8 +66,8 @@ impl Application {
     surface.configure(&device, &config);
 
     Self {
-      instance,
-      adapter,
+      _instance: instance,
+      _adapter: adapter,
       surface,
       device,
       queue,
@@ -85,7 +75,7 @@ impl Application {
       size,
       event_loop: Mutex::new(Some(event_loop)),
       window,
-      featuredb: FeatureDB::new(),
+      _featuredb: FeatureDB::new(),
       websocket: Client::new().await.ok(),
     }
   }
@@ -99,8 +89,8 @@ impl Application {
     }
   }
 
-  pub fn input(&mut self, event: &WindowEvent) -> bool {
-    false
+  pub fn _input(&mut self, _event: &WindowEvent) -> bool {
+    unimplemented!();
   }
 
   pub fn update(&mut self) {}
