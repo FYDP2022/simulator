@@ -16,8 +16,12 @@ test:
 
 lint:
   stage: lint
-  script: cargo clippy -- -D warnings
+  script:
+    - rustup component add clippy --quiet
+    - cargo clippy -- -D warnings
 
 format:
   stage: format
-  script: cargo fmt -- --check
+  script:
+    - rustup component add rustfmt --quiet
+    - cargo fmt -- --check
