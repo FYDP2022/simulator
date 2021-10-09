@@ -7,7 +7,7 @@ stages:
   - format
 
 before_script:
-  - rustup component add --quiet clippy rustfmt
+  - rustup --quiet component add clippy rustfmt
 
 build:
   stage: build
