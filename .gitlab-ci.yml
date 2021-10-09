@@ -1,0 +1,26 @@
+image: "rust:latest"
+
+stages:
+  - build
+  - test
+  - lint
+  - format
+
+before_script:
+  - rustup --quiet component add clippy rustfmt
+
+build:
+  stage: build
+  script: cargo check
+
+test:
+  stage: test
+  script: cargo test
+
+lint:
+  stage: lint
+  script: cargo clippy -- -D warnings
+
+format:
+  stage: format
+  script: cargo fmt -- --check
