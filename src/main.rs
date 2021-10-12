@@ -1,6 +1,7 @@
 mod application;
 mod featuredb;
 mod net;
+mod gfx;
 
 use application::Application;
 

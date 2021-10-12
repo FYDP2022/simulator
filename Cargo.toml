@@ -13,6 +13,7 @@ cgmath = "0.18"
 env_logger = "0.9"
 log = "0.4"
 wgpu = "0.10"
+bytemuck = { version = "*", features = ["derive"] }
 rusqlite = { version = "0.25.3", features = ["bundled"] }
 async-tungstenite = { version = "0.15.0", features = ["async-std-runtime"] }
 tungstenite = "*"

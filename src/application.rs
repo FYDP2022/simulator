@@ -1,11 +1,12 @@
 use super::featuredb::FeatureDB;
 use super::net::Client;
-
-use std::sync::Mutex;
+use super::gfx::renderer::BasicRenderer;
+use super::gfx::camera::Camera;
 
 use winit::event::*;
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
+use wgpu::util::DeviceExt;
 
 pub struct Application {
   _instance: wgpu::Instance,
@@ -15,8 +16,11 @@ pub struct Application {
   queue: wgpu::Queue,
   config: wgpu::SurfaceConfiguration,
   size: winit::dpi::PhysicalSize<u32>,
-  event_loop: Mutex<Option<EventLoop<()>>>,
+  event_loop: Option<EventLoop<()>>,
   window: Window,
+
+  camera: Camera,
+  basic_renderer: BasicRenderer,
   _featuredb: FeatureDB,
   websocket: Option<Client>,
 }
@@ -51,7 +55,7 @@ impl Application {
           limits: wgpu::Limits::default(),
           label: None,
         },
-        None, // Trace path
+        None,
       )
       .await
       .unwrap();
@@ -65,6 +69,15 @@ impl Application {
     };
     surface.configure(&device, &config);
 
+    let mut camera = Camera::new(&device);
+    camera.aspect = size.width as f32 / size.height as f32;
+    camera.up = (0.5, 0.5, 0.0).into();
+    camera.eye = (0.0, 0.0, 1.0).into();
+    camera.target = (0.0, 0.0, 0.0).into();
+    camera.update(&device);
+
+    let basic_renderer = BasicRenderer::new(&device, &config);
+
     Self {
       _instance: instance,
       _adapter: adapter,
@@ -73,8 +86,10 @@ impl Application {
       queue,
       config,
       size,
-      event_loop: Mutex::new(Some(event_loop)),
+      event_loop: Some(event_loop),
       window,
+      camera,
+      basic_renderer,
       _featuredb: FeatureDB::new(),
       websocket: Client::new().await.ok(),
     }
@@ -93,7 +108,9 @@ impl Application {
     unimplemented!();
   }
 
-  pub fn update(&mut self) {}
+  pub fn update(&mut self) {
+    self.camera.update(&self.device);
+  }
 
   pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
     let output = self.surface.get_current_frame()?.output;
@@ -103,7 +120,7 @@ impl Application {
     });
 
     {
-      let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+      let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: Some("Render Pass"),
         color_attachments: &[wgpu::RenderPassColorAttachment {
           view: &view,
@@ -120,6 +137,8 @@ impl Application {
         }],
         depth_stencil_attachment: None,
       });
+
+      self.basic_renderer.render(&mut render_pass, &self.camera);
     }
 
     // submit will accept anything that implements IntoIter
@@ -129,7 +148,7 @@ impl Application {
   }
 
   pub async fn run(mut self) {
-    let event_loop = self.event_loop.lock().unwrap().take().unwrap();
+    let event_loop = self.event_loop.take().unwrap();
     event_loop.run(move |event, _, control_flow| match event {
       Event::WindowEvent { ref event, window_id } if window_id == self.window.id() => match event {
         WindowEvent::CloseRequested
@@ -142,6 +161,10 @@ impl Application {
             },
           ..
         } => *control_flow = ControlFlow::Exit,
+        WindowEvent::Resized(physical_size) => {
+          self.resize(*physical_size);
+          self.camera.aspect = physical_size.width as f32 / physical_size.height as f32;
+        }
         _ => {}
       },
       Event::RedrawRequested(_) => {
