@@ -1,7 +1,11 @@
 mod application;
 mod featuredb;
-mod net;
 mod gfx;
+mod net;
+mod raycast;
+#[allow(dead_code)]
+mod trackball;
+mod ui;
 
 use application::Application;
 

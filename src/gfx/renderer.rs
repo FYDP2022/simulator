@@ -1,6 +1,6 @@
 use super::camera::Camera;
 
-use wgpu::{Device, SurfaceConfiguration, RenderPipeline, RenderPass};
+use wgpu::{Device, RenderPass, RenderPipeline, SurfaceConfiguration};
 
 pub struct BasicRenderer {
   pipeline: RenderPipeline,
@@ -17,7 +17,7 @@ impl BasicRenderer {
       bind_group_layouts: &[&camera_layout],
       push_constant_ranges: &[],
     });
-  
+
     let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
       label: Some("Render Pipeline"),
       layout: Some(&render_pipeline_layout),
@@ -52,9 +52,7 @@ impl BasicRenderer {
       },
     });
 
-    Self {
-      pipeline,
-    }
+    Self { pipeline }
   }
 
   pub fn render<'a>(&'a self, render_pass: &mut RenderPass<'a>, camera: &'a Camera) {

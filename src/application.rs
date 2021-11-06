@@ -1,12 +1,12 @@
 use super::featuredb::FeatureDB;
-use super::net::Client;
-use super::gfx::renderer::BasicRenderer;
 use super::gfx::camera::Camera;
+use super::gfx::renderer::BasicRenderer;
+use super::net::Client;
+use super::ui::{KeyEvent, MouseEvent, UIEvent, UserInterface};
 
 use winit::event::*;
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
-use wgpu::util::DeviceExt;
 
 pub struct Application {
   _instance: wgpu::Instance,
@@ -23,6 +23,7 @@ pub struct Application {
   basic_renderer: BasicRenderer,
   _featuredb: FeatureDB,
   websocket: Option<Client>,
+  user_interface: UserInterface,
 }
 
 impl Application {
@@ -71,8 +72,8 @@ impl Application {
 
     let mut camera = Camera::new(&device);
     camera.aspect = size.width as f32 / size.height as f32;
-    camera.up = (0.5, 0.5, 0.0).into();
-    camera.eye = (0.0, 0.0, 1.0).into();
+    camera.up = (0.0, 1.0, 0.0).into();
+    camera.eye = (0.0, 0.0, 5.0).into();
     camera.target = (0.0, 0.0, 0.0).into();
     camera.update(&device);
 
@@ -92,6 +93,7 @@ impl Application {
       basic_renderer,
       _featuredb: FeatureDB::new(),
       websocket: Client::new().await.ok(),
+      user_interface: UserInterface::new(size),
     }
   }
 
@@ -104,11 +106,89 @@ impl Application {
     }
   }
 
-  pub fn _input(&mut self, _event: &WindowEvent) -> bool {
-    unimplemented!();
+  pub fn input(&mut self, event: &WindowEvent) -> bool {
+    let current = &mut self.user_interface.current_state;
+    match event {
+      WindowEvent::MouseInput { button, state, .. } => {
+        match button {
+          MouseButton::Left => current.left = MouseEvent::from(*state),
+          MouseButton::Middle => current.middle = MouseEvent::from(*state),
+          MouseButton::Right => current.right = MouseEvent::from(*state),
+          _ => (),
+        };
+        true
+      }
+      WindowEvent::CursorMoved { position, .. } => {
+        current.position = *position;
+        true
+      }
+      WindowEvent::KeyboardInput { input, .. } => {
+        if let Some(key) = input.virtual_keycode {
+          current.keys.insert(key, KeyEvent::from(input.state));
+          true
+        } else {
+          false
+        }
+      }
+      _ => false,
+    }
   }
 
   pub fn update(&mut self) {
+    let current = self.user_interface.current_state.clone();
+    // let last = self.user_interface.last_state.clone();
+    let mut next = current.clone();
+
+    // let last_ray = last.ray(&self.camera, self.window.inner_size());
+    // let current_ray = current.ray(&self.camera, self.window.inner_size());
+
+    match current.left {
+      MouseEvent::Click => {
+        next.left = MouseEvent::Move;
+      }
+      MouseEvent::Release => {
+        next.left = MouseEvent::None;
+      }
+      _ => (),
+    };
+
+    match current.middle {
+      MouseEvent::Click => {
+        next.middle = MouseEvent::Move;
+      }
+      MouseEvent::Release => {
+        next.middle = MouseEvent::None;
+      }
+      _ => (),
+    };
+
+    match current.right {
+      MouseEvent::Click => {
+        next.event = UIEvent::FreeMoveCamera;
+        next.right = MouseEvent::Move;
+      }
+      MouseEvent::Move => {
+        if let UIEvent::FreeMoveCamera = current.event {
+          self.user_interface.free_move(&mut self.camera);
+        }
+      }
+      MouseEvent::Release => {
+        next.event = UIEvent::None;
+        next.right = MouseEvent::None;
+      }
+      _ => (),
+    }
+
+    for (_, event) in next.keys.iter_mut() {
+      match event {
+        KeyEvent::Press => *event = KeyEvent::Hold,
+        KeyEvent::Release => *event = KeyEvent::None,
+        _ => (),
+      }
+    }
+
+    self.user_interface.last_state = current;
+    self.user_interface.current_state = next;
     self.camera.update(&self.device);
   }
 
@@ -165,7 +245,9 @@ impl Application {
           self.resize(*physical_size);
           self.camera.aspect = physical_size.width as f32 / physical_size.height as f32;
         }
-        _ => {}
+        _ => {
+          self.input(event);
+        }
       },
       Event::RedrawRequested(_) => {
         if let Some(client) = &self.websocket {
