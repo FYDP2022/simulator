@@ -1,3 +1,5 @@
+pub mod feature;
+
 use wgpu::{Device, ShaderModule};
 
 pub fn basic(device: &Device) -> ShaderModule {

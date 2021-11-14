@@ -1,9 +1,10 @@
 use super::featuredb::FeatureDB;
 use super::gfx::camera::Camera;
-use super::gfx::renderer::BasicRenderer;
+use super::gfx::renderer::{BasicRenderer, FeatureRenderer};
 use super::net::Client;
 use super::ui::{KeyEvent, MouseEvent, UIEvent, UserInterface};
 
+use cgmath::{Matrix4, One};
 use winit::event::*;
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
@@ -21,6 +22,7 @@ pub struct Application {
 
   camera: Camera,
   basic_renderer: BasicRenderer,
+  feature_renderer: FeatureRenderer,
   _featuredb: FeatureDB,
   websocket: Option<Client>,
   user_interface: UserInterface,
@@ -78,6 +80,12 @@ impl Application {
     camera.update(&device);
 
     let basic_renderer = BasicRenderer::new(&device, &config);
+    let feature_renderer = FeatureRenderer::new(
+      super::gfx::geometry::uv_sphere(100),
+      vec![Matrix4::one()],
+      &device,
+      &config,
+    );
 
     Self {
       _instance: instance,
@@ -91,6 +99,7 @@ impl Application {
       window,
       camera,
       basic_renderer,
+      feature_renderer,
       _featuredb: FeatureDB::new(),
       websocket: Client::new().await.ok(),
       user_interface: UserInterface::new(size),
@@ -219,6 +228,7 @@ impl Application {
       });
 
       self.basic_renderer.render(&mut render_pass, &self.camera);
+      self.feature_renderer.render(&mut render_pass, &self.camera);
     }
 
     // submit will accept anything that implements IntoIter

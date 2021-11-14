@@ -180,7 +180,8 @@ impl UserInterface {
 
     if current != last {
       let (x_angle, y_angle) = self.mouse_angle(camera);
-      let transform = Matrix4::from_angle_x(-y_angle) * Matrix4::from_angle_y(-x_angle);
+      let transform =
+        Matrix4::from_axis_angle(camera.right(), -y_angle) * Matrix4::from_axis_angle(camera.up, -x_angle);
       let delta = (transform * (camera.target - camera.eye).extend(0.0)).truncate();
       camera.target = camera.eye + delta;
       camera.up = (transform * camera.up.extend(0.0)).truncate();
