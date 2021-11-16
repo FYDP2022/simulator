@@ -37,11 +37,11 @@ pub fn uv_sphere(n: u32) -> Geometry {
         let idx = [i * n + j, i * n + (j - 1), (i - 1) * n + j, (i - 1) * n + (j - 1)];
         geometry
           .indices
-          .extend_from_slice(&[idx[0] as u16, idx[2] as u16, idx[1] as u16]);
+          .extend_from_slice(&[idx[0] as u16, idx[1] as u16, idx[2] as u16]);
         if i > 1 {
           geometry
             .indices
-            .extend_from_slice(&[idx[2] as u16, idx[3] as u16, idx[1] as u16]);
+            .extend_from_slice(&[idx[3] as u16, idx[2] as u16, idx[1] as u16]);
         }
       }
     }
@@ -50,11 +50,11 @@ pub fn uv_sphere(n: u32) -> Geometry {
       let idx = [i * n, (i + 1) * n - 1, (i - 1) * n, i * n - 1];
       geometry
         .indices
-        .extend_from_slice(&[idx[0] as u16, idx[2] as u16, idx[1] as u16]);
+        .extend_from_slice(&[idx[0] as u16, idx[1] as u16, idx[2] as u16]);
       if i > 1 {
         geometry
           .indices
-          .extend_from_slice(&[idx[2] as u16, idx[3] as u16, idx[1] as u16]);
+          .extend_from_slice(&[idx[3] as u16, idx[2] as u16, idx[1] as u16]);
       }
     }
   }
