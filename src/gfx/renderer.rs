@@ -123,7 +123,12 @@ impl FeatureRenderer {
       },
     });
 
-    let vertices: Vec<FeatureVertex> = geometry.vertices.iter().map(|x| FeatureVertex::from(*x)).collect();
+    let vertices: Vec<FeatureVertex> = geometry
+      .vertices
+      .iter()
+      .zip(geometry.normals.iter())
+      .map(FeatureVertex::from)
+      .collect();
 
     let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
       label: Some("Vertex Buffer"),
