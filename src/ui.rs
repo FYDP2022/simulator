@@ -170,7 +170,11 @@ impl UserInterface {
     }
 
     if move_relative.magnitude() > 0.0 {
-      move_relative = move_relative.normalize() * 0.05;
+      if self.current_state.key(&VirtualKeyCode::LShift).is_down() {
+        move_relative = move_relative.normalize() * 0.5;
+      } else {
+        move_relative = move_relative.normalize() * 0.05;
+      }
     }
     let translation =
       move_relative.x * camera.right() + move_relative.y * camera.up.normalize() + move_relative.z * camera.forward();

@@ -47,7 +47,9 @@ fn main(
 [[stage(fragment)]]
 fn main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
   let PI = 3.1415926538;
-  let LIGHT_DIRECTION = vec3<f32>(0.0, -sin(PI / 6.0), -cos(PI / 6.0));
+  let Y = -sin(PI / 6.0);
+  let Z = -cos(PI / 6.0);
+  let LIGHT_DIRECTION = vec3<f32>(0.0, Y, Z);
   let LIGHT_INTENSITY = 1.0;
   let ALBEDO = 1.0;
   let COLOR = vec3<f32>(0.3, 0.2, 0.1);

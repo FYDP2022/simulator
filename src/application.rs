@@ -1,4 +1,4 @@
-use super::featuredb::FeatureDB;
+use super::featuredb::{Feature, FeatureDB};
 use super::gfx::camera::Camera;
 use super::gfx::renderer::{BasicRenderer, FeatureRenderer};
 use super::net::Client;
@@ -23,7 +23,7 @@ pub struct Application {
   camera: Camera,
   basic_renderer: BasicRenderer,
   feature_renderer: FeatureRenderer,
-  _featuredb: FeatureDB,
+  _database: FeatureDB,
   websocket: Option<Client>,
   user_interface: UserInterface,
 }
@@ -79,10 +79,19 @@ impl Application {
     camera.target = (0.0, 0.0, 0.0).into();
     camera.update(&device);
 
+    let database = FeatureDB::new().unwrap();
+    let instances = {
+      let mut stmt = database.current_frame().unwrap();
+      stmt.query_map([], |row| Feature::from_row(row))
+        .unwrap()
+        .map(|feature| feature.unwrap().transform())
+        .collect()
+    };
+
     let basic_renderer = BasicRenderer::new(&device, &config);
     let feature_renderer = FeatureRenderer::new(
       super::gfx::geometry::uv_sphere(100),
-      vec![Matrix4::one()],
+      instances,
       &device,
       &config,
     );
@@ -100,7 +109,7 @@ impl Application {
       camera,
       basic_renderer,
       feature_renderer,
-      _featuredb: FeatureDB::new(),
+      _database: database,
       websocket: Client::new().await.ok(),
       user_interface: UserInterface::new(size),
     }
