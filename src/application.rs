@@ -84,7 +84,7 @@ impl Application {
     let instances = {
       let mut stmt = database.current_frame().unwrap();
       stmt
-        .query_map([], |row| Feature::from_row(row))
+        .query_map([], Feature::from_row)
         .unwrap()
         .map(|feature| feature.unwrap().transform())
         .collect()
@@ -132,6 +132,7 @@ impl Application {
       self.config.width = new_size.width;
       self.config.height = new_size.height;
       self.surface.configure(&self.device, &self.config);
+      self.depth_texture = Texture::create_depth_texture(&self.device, &self.config, "depth_texture");
     }
   }
 

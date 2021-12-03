@@ -105,18 +105,10 @@ impl UIState {
   }
 }
 
+#[derive(Default)]
 pub struct UserInterface {
   pub last_state: UIState,
   pub current_state: UIState,
-}
-
-impl Default for UserInterface {
-  fn default() -> Self {
-    UserInterface {
-      last_state: UIState::default(),
-      current_state: UIState::default(),
-    }
-  }
 }
 
 impl UserInterface {
