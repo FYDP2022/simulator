@@ -168,6 +168,12 @@ impl UserInterface {
     if self.current_state.key(&VirtualKeyCode::D).is_down() {
       move_relative.x += 1.0;
     }
+    if self.current_state.key(&VirtualKeyCode::Space).is_down() {
+      move_relative.y += 1.0;
+    }
+    if self.current_state.key(&VirtualKeyCode::LControl).is_down() {
+      move_relative.y -= 1.0;
+    }
 
     if move_relative.magnitude() > 0.0 {
       if self.current_state.key(&VirtualKeyCode::LShift).is_down() {

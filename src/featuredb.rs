@@ -1,5 +1,5 @@
-use cgmath::{Vector3, Matrix4};
-use rusqlite::{params, Result, Connection, Row, Statement};
+use cgmath::{Matrix4, Vector3};
+use rusqlite::{params, Connection, Result, Row, Statement};
 
 /// Represents a recognized feature
 pub struct Feature {
@@ -14,18 +14,32 @@ pub struct Feature {
 impl Feature {
   pub fn from_row(row: &Row<'_>) -> Result<Self> {
     Ok(Self {
-      id: row.get(0)?,
-      color: (row.get(1)?, row.get(2)?, row.get(3)?).into(),
-      position_mean: (row.get(4)?, row.get(5)?, row.get(6)?).into(),
-      position_variance: (row.get(7)?, row.get(8)?, row.get(9)?).into(),
-      radius_mean: row.get(10)?,
-      radius_variance: row.get(11)?,
+      id: row.get("id")?,
+      color: (row.get("color_r")?, row.get("color_g")?, row.get("color_b")?).into(),
+      position_mean: (
+        row.get("position_mean_x")?,
+        row.get("position_mean_y")?,
+        row.get("position_mean_z")?,
+      )
+        .into(),
+      position_variance: (
+        row.get("position_variance_x")?,
+        row.get("position_variance_y")?,
+        row.get("position_variance_z")?,
+      )
+        .into(),
+      radius_mean: row.get("radius_mean")?,
+      radius_variance: row.get("radius_variance")?,
     })
   }
 
   pub fn transform(&self) -> Matrix4<f32> {
-    Matrix4::from_translation(self.position_mean) *
-      Matrix4::from_nonuniform_scale(self.position_variance.x, self.position_variance.y, self.position_variance.z)
+    Matrix4::from_translation(self.position_mean)
+      * Matrix4::from_nonuniform_scale(
+        self.position_variance.x,
+        self.position_variance.y,
+        self.position_variance.z,
+      )
   }
 }
 
@@ -35,7 +49,7 @@ pub struct FeatureDB {
 
 impl FeatureDB {
   pub fn new() -> Result<Self> {
-    let connection = Connection::open("state.db")?;
+    let connection = Connection::open("recognition.sqlite")?;
 
     connection.execute(
       "CREATE TABLE IF NOT EXISTS features (
@@ -56,23 +70,24 @@ impl FeatureDB {
       )",
       [],
     )?;
-    
-    Ok(Self {
-      connection,
-    })
+
+    Ok(Self { connection })
   }
 
   pub fn current_frame_number(&self) -> Result<u32> {
     let mut stmt = self.connection.prepare("SELECT MAX(frame) FROM features")?;
-    let result = stmt.query([])?
-      .next()?
-      .map(|row| row.get(0).unwrap_or(0))
-      .unwrap_or(0);
+    let result = stmt.query([])?.next()?.map(|row| row.get(0).unwrap_or(0)).unwrap_or(0);
     Ok(result)
   }
 
   pub fn current_frame(&self) -> Result<Statement<'_>> {
-    self.connection.prepare("SELECT frame, * FROM features WHERE frame = (SELECT MAX(frame) FROM features)")
+    self
+      .connection
+      .prepare("SELECT frame, * FROM features WHERE frame = (SELECT MAX(frame) FROM features)")
+  }
+
+  pub fn clear(&self) -> Result<usize> {
+    self.connection.execute("DELETE FROM features", [])
   }
 
   pub fn insert(&self, features: Vec<Feature>) -> Result<()> {
@@ -99,7 +114,7 @@ impl FeatureDB {
           feature.position_variance.z,
           feature.radius_mean,
           feature.radius_variance
-        ]
+        ],
       )?;
     }
     Ok(())

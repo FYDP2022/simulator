@@ -1,10 +1,10 @@
 use super::featuredb::{Feature, FeatureDB};
 use super::gfx::camera::Camera;
 use super::gfx::renderer::{BasicRenderer, FeatureRenderer};
+use super::gfx::texture::Texture;
 use super::net::Client;
 use super::ui::{KeyEvent, MouseEvent, UIEvent, UserInterface};
 
-use cgmath::{Matrix4, One};
 use winit::event::*;
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
@@ -26,6 +26,7 @@ pub struct Application {
   _database: FeatureDB,
   websocket: Option<Client>,
   user_interface: UserInterface,
+  depth_texture: Texture,
 }
 
 impl Application {
@@ -82,19 +83,28 @@ impl Application {
     let database = FeatureDB::new().unwrap();
     let instances = {
       let mut stmt = database.current_frame().unwrap();
-      stmt.query_map([], |row| Feature::from_row(row))
+      stmt
+        .query_map([], |row| Feature::from_row(row))
         .unwrap()
         .map(|feature| feature.unwrap().transform())
         .collect()
     };
 
-    let basic_renderer = BasicRenderer::new(&device, &config);
-    let feature_renderer = FeatureRenderer::new(
-      super::gfx::geometry::uv_sphere(100),
+    use super::gfx::renderer;
+
+    let basic_renderer = BasicRenderer::new(renderer::BasicRendererConfiguration {
+      device: &device,
+      surface_config: &config,
+    });
+
+    let feature_renderer = FeatureRenderer::new(renderer::FeatureRendererConfiguration {
+      geometry: super::gfx::geometry::uv_sphere(100),
       instances,
-      &device,
-      &config,
-    );
+      device: &device,
+      surface_config: &config,
+    });
+
+    let depth_texture = Texture::create_depth_texture(&device, &config, "depth_texture");
 
     Self {
       _instance: instance,
@@ -112,6 +122,7 @@ impl Application {
       _database: database,
       websocket: Client::new().await.ok(),
       user_interface: UserInterface::new(size),
+      depth_texture,
     }
   }
 
@@ -233,7 +244,14 @@ impl Application {
             store: true,
           },
         }],
-        depth_stencil_attachment: None,
+        depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+          view: &self.depth_texture.view,
+          depth_ops: Some(wgpu::Operations {
+            load: wgpu::LoadOp::Clear(1.0),
+            store: true,
+          }),
+          stencil_ops: None,
+        }),
       });
 
       self.basic_renderer.render(&mut render_pass, &self.camera);

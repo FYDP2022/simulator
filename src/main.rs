@@ -8,8 +8,8 @@ mod raycast;
 mod trackball;
 mod ui;
 
-use cli::Cli;
 use application::Application;
+use cli::Cli;
 
 #[async_std::main]
 async fn main() {
