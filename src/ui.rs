@@ -105,18 +105,10 @@ impl UIState {
   }
 }
 
+#[derive(Default)]
 pub struct UserInterface {
   pub last_state: UIState,
   pub current_state: UIState,
-}
-
-impl Default for UserInterface {
-  fn default() -> Self {
-    UserInterface {
-      last_state: UIState::default(),
-      current_state: UIState::default(),
-    }
-  }
 }
 
 impl UserInterface {
@@ -168,9 +160,19 @@ impl UserInterface {
     if self.current_state.key(&VirtualKeyCode::D).is_down() {
       move_relative.x += 1.0;
     }
+    if self.current_state.key(&VirtualKeyCode::Space).is_down() {
+      move_relative.y += 1.0;
+    }
+    if self.current_state.key(&VirtualKeyCode::LControl).is_down() {
+      move_relative.y -= 1.0;
+    }
 
     if move_relative.magnitude() > 0.0 {
-      move_relative = move_relative.normalize() * 0.05;
+      if self.current_state.key(&VirtualKeyCode::LShift).is_down() {
+        move_relative = move_relative.normalize() * 0.5;
+      } else {
+        move_relative = move_relative.normalize() * 0.05;
+      }
     }
     let translation =
       move_relative.x * camera.right() + move_relative.y * camera.up.normalize() + move_relative.z * camera.forward();

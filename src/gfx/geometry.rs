@@ -1,19 +1,10 @@
 use cgmath::{Point3, Vector3};
 
+#[derive(Default)]
 pub struct Geometry {
   pub vertices: Vec<Point3<f32>>,
   pub normals: Vec<Vector3<f32>>,
   pub indices: Vec<u16>,
-}
-
-impl Default for Geometry {
-  fn default() -> Self {
-    Self {
-      vertices: Vec::new(),
-      normals: Vec::new(),
-      indices: Vec::new(),
-    }
-  }
 }
 
 pub fn uv_sphere(n: u32) -> Geometry {

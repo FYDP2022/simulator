@@ -1,28 +1,34 @@
 use super::camera::Camera;
 use super::geometry::Geometry;
 use super::shader::feature::{FeatureInstance, FeatureVertex};
+use super::texture::Texture;
 
 use cgmath::Matrix4;
 use wgpu::util::DeviceExt;
 use wgpu::{Buffer, Device, RenderPass, RenderPipeline, SurfaceConfiguration};
+
+pub struct BasicRendererConfiguration<'a> {
+  pub device: &'a Device,
+  pub surface_config: &'a SurfaceConfiguration,
+}
 
 pub struct BasicRenderer {
   pipeline: RenderPipeline,
 }
 
 impl BasicRenderer {
-  pub fn new(device: &Device, config: &SurfaceConfiguration) -> Self {
-    let shader = super::shader::basic(device);
+  pub fn new(config: BasicRendererConfiguration) -> Self {
+    let shader = super::shader::basic(config.device);
 
-    let camera_layout = Camera::layout(device);
+    let camera_layout = Camera::layout(config.device);
 
-    let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+    let render_pipeline_layout = config.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
       label: Some("Basic Shading Layout"),
       bind_group_layouts: &[&camera_layout],
       push_constant_ranges: &[],
     });
 
-    let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    let pipeline = config.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
       label: Some("Render Pipeline"),
       layout: Some(&render_pipeline_layout),
       vertex: wgpu::VertexState {
@@ -34,7 +40,7 @@ impl BasicRenderer {
         module: &shader,
         entry_point: "main",
         targets: &[wgpu::ColorTargetState {
-          format: config.format,
+          format: config.surface_config.format,
           blend: Some(wgpu::BlendState::REPLACE),
           write_mask: wgpu::ColorWrites::ALL,
         }],
@@ -48,7 +54,13 @@ impl BasicRenderer {
         clamp_depth: false,
         conservative: false,
       },
-      depth_stencil: None,
+      depth_stencil: Some(wgpu::DepthStencilState {
+        format: Texture::DEPTH_FORMAT,
+        depth_write_enabled: true,
+        depth_compare: wgpu::CompareFunction::Less,
+        stencil: wgpu::StencilState::default(),
+        bias: wgpu::DepthBiasState::default(),
+      }),
       multisample: wgpu::MultisampleState {
         count: 1,
         mask: !0,
@@ -66,6 +78,13 @@ impl BasicRenderer {
   }
 }
 
+pub struct FeatureRendererConfiguration<'a> {
+  pub geometry: Geometry,
+  pub instances: Vec<Matrix4<f32>>,
+  pub device: &'a Device,
+  pub surface_config: &'a SurfaceConfiguration,
+}
+
 pub struct FeatureRenderer {
   pipeline: RenderPipeline,
   vertex_buffer: Buffer,
@@ -78,18 +97,18 @@ pub struct FeatureRenderer {
 }
 
 impl FeatureRenderer {
-  pub fn new(geometry: Geometry, instances: Vec<Matrix4<f32>>, device: &Device, config: &SurfaceConfiguration) -> Self {
-    let shader = super::shader::feature::compile(device);
+  pub fn new(config: FeatureRendererConfiguration) -> Self {
+    let shader = super::shader::feature::compile(config.device);
 
-    let camera_layout = Camera::layout(device);
+    let camera_layout = Camera::layout(config.device);
 
-    let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+    let render_pipeline_layout = config.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
       label: Some("Basic Shading Layout"),
       bind_group_layouts: &[&camera_layout],
       push_constant_ranges: &[],
     });
 
-    let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    let pipeline = config.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
       label: Some("Render Pipeline"),
       layout: Some(&render_pipeline_layout),
       vertex: wgpu::VertexState {
@@ -101,7 +120,7 @@ impl FeatureRenderer {
         module: &shader,
         entry_point: "main",
         targets: &[wgpu::ColorTargetState {
-          format: config.format,
+          format: config.surface_config.format,
           blend: Some(wgpu::BlendState::REPLACE),
           write_mask: wgpu::ColorWrites::ALL,
         }],
@@ -115,7 +134,13 @@ impl FeatureRenderer {
         clamp_depth: false,
         conservative: false,
       },
-      depth_stencil: None,
+      depth_stencil: Some(wgpu::DepthStencilState {
+        format: Texture::DEPTH_FORMAT,
+        depth_write_enabled: true,
+        depth_compare: wgpu::CompareFunction::Less,
+        stencil: wgpu::StencilState::default(),
+        bias: wgpu::DepthBiasState::default(),
+      }),
       multisample: wgpu::MultisampleState {
         count: 1,
         mask: !0,
@@ -123,28 +148,29 @@ impl FeatureRenderer {
       },
     });
 
-    let vertices: Vec<FeatureVertex> = geometry
+    let vertices: Vec<FeatureVertex> = config
+      .geometry
       .vertices
       .iter()
-      .zip(geometry.normals.iter())
+      .zip(config.geometry.normals.iter())
       .map(FeatureVertex::from)
       .collect();
 
-    let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    let vertex_buffer = config.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
       label: Some("Vertex Buffer"),
       contents: bytemuck::cast_slice(&vertices[..]),
       usage: wgpu::BufferUsages::VERTEX,
     });
 
-    let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    let index_buffer = config.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
       label: Some("Index Buffer"),
-      contents: bytemuck::cast_slice(&geometry.indices[..]),
+      contents: bytemuck::cast_slice(&config.geometry.indices[..]),
       usage: wgpu::BufferUsages::INDEX,
     });
 
-    let instances: Vec<FeatureInstance> = instances.iter().map(|x| FeatureInstance::from(*x)).collect();
+    let instances: Vec<FeatureInstance> = config.instances.iter().map(|x| FeatureInstance::from(*x)).collect();
 
-    let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    let instance_buffer = config.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
       label: Some("Instance Buffer"),
       contents: bytemuck::cast_slice(&instances[..]),
       usage: wgpu::BufferUsages::VERTEX,
@@ -155,7 +181,7 @@ impl FeatureRenderer {
       vertex_buffer,
       vertices,
       index_buffer,
-      indices: geometry.indices,
+      indices: config.geometry.indices,
       instance_buffer,
       instances,
     }
