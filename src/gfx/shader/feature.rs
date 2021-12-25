@@ -1,4 +1,4 @@
-use cgmath::{Matrix4, Point3, Vector3};
+use cgmath::{Point3, Vector3};
 use wgpu::{Device, ShaderModule, VertexBufferLayout};
 
 pub fn compile(device: &Device) -> ShaderModule {
@@ -42,21 +42,17 @@ impl FeatureVertex {
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct FeatureInstance {
   pub model: [[f32; 4]; 4],
-}
-
-impl From<Matrix4<f32>> for FeatureInstance {
-  fn from(matrix: Matrix4<f32>) -> Self {
-    FeatureInstance { model: matrix.into() }
-  }
+  pub color: [f32; 3],
 }
 
 impl FeatureInstance {
   pub fn description<'a>() -> VertexBufferLayout<'a> {
-    const ATTRIBUTES: [wgpu::VertexAttribute; 4] = wgpu::vertex_attr_array![
+    const ATTRIBUTES: [wgpu::VertexAttribute; 5] = wgpu::vertex_attr_array![
       2 => Float32x4,
       3 => Float32x4,
       4 => Float32x4,
       5 => Float32x4,
+      6 => Float32x3,
     ];
     wgpu::VertexBufferLayout {
       array_stride: std::mem::size_of::<FeatureInstance>() as wgpu::BufferAddress,
@@ -65,8 +61,3 @@ impl FeatureInstance {
     }
   }
 }
-
-// #[repr(C)]
-// #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-// pub struct FeatureUniform {
-// }

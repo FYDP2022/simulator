@@ -1,6 +1,7 @@
 use super::featuredb::{Feature, FeatureDB};
 use super::gfx::camera::Camera;
 use super::gfx::renderer::{BasicRenderer, FeatureRenderer};
+use super::gfx::shader::feature::FeatureInstance;
 use super::gfx::texture::Texture;
 use super::net::Client;
 use super::ui::{KeyEvent, MouseEvent, UIEvent, UserInterface};
@@ -87,7 +88,11 @@ impl Application {
       stmt
         .query_map([], Feature::from_row)
         .unwrap()
-        .map(|feature| feature.unwrap().transform())
+        .map(|result| result.unwrap())
+        .map(|feature| FeatureInstance {
+          model: feature.transform().into(),
+          color: feature.color.map(|x| x as f32 / 255.0).into(),
+        })
         .collect()
     };
 

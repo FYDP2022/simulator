@@ -3,7 +3,6 @@ use super::geometry::Geometry;
 use super::shader::feature::{FeatureInstance, FeatureVertex};
 use super::texture::Texture;
 
-use cgmath::Matrix4;
 use wgpu::util::DeviceExt;
 use wgpu::{Buffer, Device, RenderPass, RenderPipeline, SurfaceConfiguration};
 
@@ -81,7 +80,7 @@ impl BasicRenderer {
 
 pub struct FeatureRendererConfiguration<'a> {
   pub geometry: Geometry,
-  pub instances: Vec<Matrix4<f32>>,
+  pub instances: Vec<FeatureInstance>,
   pub device: &'a Device,
   pub surface_config: &'a SurfaceConfiguration,
 }
@@ -170,11 +169,9 @@ impl FeatureRenderer {
       usage: wgpu::BufferUsages::INDEX,
     });
 
-    let instances: Vec<FeatureInstance> = config.instances.iter().map(|x| FeatureInstance::from(*x)).collect();
-
     let instance_buffer = config.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
       label: Some("Instance Buffer"),
-      contents: bytemuck::cast_slice(&instances[..]),
+      contents: bytemuck::cast_slice(&config.instances[..]),
       usage: wgpu::BufferUsages::VERTEX,
     });
 
@@ -185,7 +182,7 @@ impl FeatureRenderer {
       index_buffer,
       indices: config.geometry.indices,
       instance_buffer,
-      instances,
+      instances: config.instances,
     }
   }
 
