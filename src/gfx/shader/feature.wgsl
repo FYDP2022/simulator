@@ -1,6 +1,5 @@
 // Feature shader
 
-[[block]]
 struct CameraUniform {
   view_proj: mat4x4<f32>;
 };
@@ -26,7 +25,7 @@ struct VertexOutput {
 };
 
 [[stage(vertex)]]
-fn main(
+fn vertex(
   vertex: VertexInput,
   instance: InstanceInput
 ) -> VertexOutput {
@@ -45,7 +44,7 @@ fn main(
 // Fragment shader
 
 [[stage(fragment)]]
-fn main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
+fn fragment(in: VertexOutput) -> [[location(0)]] vec4<f32> {
   let PI = 3.1415926538;
   let Y = -sin(PI / 6.0);
   let Z = -cos(PI / 6.0);

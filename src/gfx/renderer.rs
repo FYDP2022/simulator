@@ -33,12 +33,12 @@ impl BasicRenderer {
       layout: Some(&render_pipeline_layout),
       vertex: wgpu::VertexState {
         module: &shader,
-        entry_point: "main",
+        entry_point: "vertex",
         buffers: &[],
       },
       fragment: Some(wgpu::FragmentState {
         module: &shader,
-        entry_point: "main",
+        entry_point: "fragment",
         targets: &[wgpu::ColorTargetState {
           format: config.surface_config.format,
           blend: Some(wgpu::BlendState::REPLACE),
@@ -51,7 +51,7 @@ impl BasicRenderer {
         front_face: wgpu::FrontFace::Ccw,
         cull_mode: Some(wgpu::Face::Back),
         polygon_mode: wgpu::PolygonMode::Fill,
-        clamp_depth: false,
+        unclipped_depth: false,
         conservative: false,
       },
       depth_stencil: Some(wgpu::DepthStencilState {
@@ -66,6 +66,7 @@ impl BasicRenderer {
         mask: !0,
         alpha_to_coverage_enabled: false,
       },
+      multiview: None,
     });
 
     Self { pipeline }
@@ -113,12 +114,12 @@ impl FeatureRenderer {
       layout: Some(&render_pipeline_layout),
       vertex: wgpu::VertexState {
         module: &shader,
-        entry_point: "main",
+        entry_point: "vertex",
         buffers: &[FeatureVertex::description(), FeatureInstance::description()],
       },
       fragment: Some(wgpu::FragmentState {
         module: &shader,
-        entry_point: "main",
+        entry_point: "fragment",
         targets: &[wgpu::ColorTargetState {
           format: config.surface_config.format,
           blend: Some(wgpu::BlendState::REPLACE),
@@ -131,7 +132,7 @@ impl FeatureRenderer {
         front_face: wgpu::FrontFace::Ccw,
         cull_mode: Some(wgpu::Face::Back),
         polygon_mode: wgpu::PolygonMode::Fill,
-        clamp_depth: false,
+        unclipped_depth: false,
         conservative: false,
       },
       depth_stencil: Some(wgpu::DepthStencilState {
@@ -146,6 +147,7 @@ impl FeatureRenderer {
         mask: !0,
         alpha_to_coverage_enabled: false,
       },
+      multiview: None,
     });
 
     let vertices: Vec<FeatureVertex> = config

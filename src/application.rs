@@ -48,6 +48,7 @@ impl Application {
       .request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::default(),
         compatible_surface: Some(&surface),
+        force_fallback_adapter: false,
       })
       .await
       .unwrap();
@@ -223,7 +224,7 @@ impl Application {
   }
 
   pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-    let output = self.surface.get_current_frame()?.output;
+    let output = self.surface.get_current_texture()?;
     let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
     let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
       label: Some("Render Encoder"),
@@ -259,8 +260,8 @@ impl Application {
       self.feature_renderer.render(&mut render_pass, &self.camera);
     }
 
-    // submit will accept anything that implements IntoIter
     self.queue.submit(std::iter::once(encoder.finish()));
+    output.present();
 
     Ok(())
   }
