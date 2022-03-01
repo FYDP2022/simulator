@@ -58,6 +58,8 @@ impl Cli {
         let features = (0..100)
           .map(|_| Feature {
             id: 0,
+            n: 1,
+            age: 0,
             color: (
               uniform.sample(&mut rand::thread_rng()),
               uniform.sample(&mut rand::thread_rng()),
@@ -65,9 +67,12 @@ impl Cli {
             )
               .into(),
             position_mean: rand_f32_tuple3(&mean).into(),
-            position_variance: Vector3::from(rand_f32_tuple3(&variance)).map(|x| x.abs()),
+            position_deviation: Vector3::from(rand_f32_tuple3(&variance)).map(|x| x.abs()),
+            orientation_mean: (0.0, 0.0, 1.0).into(),
+            orientation_deviation: 0.0,
             radius_mean: 1.0,
-            radius_variance: 0.1,
+            radius_deviation: 0.1,
+            material: 255
           })
           .collect();
         database.insert(features).unwrap();

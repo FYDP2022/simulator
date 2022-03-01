@@ -84,7 +84,7 @@ impl Application {
 
     let database = FeatureDB::new().unwrap();
     let instances = {
-      let mut stmt = database.current_frame().unwrap();
+      let mut stmt = database.all().unwrap();
       stmt
         .query_map([], Feature::from_row)
         .unwrap()
